@@ -453,16 +453,15 @@ jobs:
 
       - name: Install cygwin on Windows
         if: matrix.config.family == 'cygwin'
-        uses: cygwin/cygwin-install-action@v5
+        uses: cygwin/cygwin-install-action@v6
         with:
           packages: cmake, dos2unix, flexdll, gcc-g++, gdb, git, libncurses-devel, make, python3
           install-dir: 'C:\cygwin'
           add-to-path: false
-          work-vol: 'C:'
 
       - name: Install Linux 32-bit multilib toolchains
         if: runner.os == 'Linux' && matrix.config.arch == 'x86'
-        run: sudo apt-get update && sudo apt-get install -y gcc-multilib g++-multilib
+        run: sudo apt-get update && sudo apt-get install -y gcc-multilib g++-multilib libc6-dev-i386
 
       - name: Install Linux ARM and AArch64 cross-compilers
         if: runner.os == 'Linux' && (matrix.config.arch == 'arm' || matrix.config.arch == 'aarch64')
@@ -489,7 +488,7 @@ jobs:
             fi
           fi
           if [ "${{runner.os}}" = "Linux" ] && [ "${{matrix.config.arch}}" = "x86" ]; then
-            EXTRA_CMAKE_FLAGS="${EXTRA_CMAKE_FLAGS} -DCMAKE_C_FLAGS=-m32 -DCMAKE_CXX_FLAGS=-m32"
+            EXTRA_CMAKE_FLAGS="${EXTRA_CMAKE_FLAGS} -DCMAKE_C_FLAGS='-m32' -DCMAKE_CXX_FLAGS='-m32'"
           fi
           if [ "${{matrix.config.arch}}" = "arm" ]; then
             EXTRA_CMAKE_FLAGS="${EXTRA_CMAKE_FLAGS} -DCMAKE_TOOLCHAIN_FILE=./conf/toolchains/gnu-linux-arm32.cmake"
@@ -659,7 +658,7 @@ jobs:
           mkdir -p "${DEST}"
           BIN_DIR="${{env.BUILD_DEST}}/bin"
           if [ ! -d "${BIN_DIR}" ]; then
-            BIN_DIR="$(find ./product/build -type d -name bin 2>/dev/null | head -n 1)"
+            BIN_DIR="$(find ./product -type d -name bin 2>/dev/null | head -n 1)"
           fi
           if [ -n "${BIN_DIR}" ] && [ -d "${BIN_DIR}" ]; then cp -R "${BIN_DIR}/" "${DEST}/bin/" || true; fi
           cp -R ./${{env.INSTALL_DEST}}/                   "${DEST}/"                  || true
