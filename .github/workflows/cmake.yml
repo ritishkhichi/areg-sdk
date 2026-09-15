@@ -34,6 +34,7 @@ jobs:
 
           - { name  : linux-gnu-static-all-test,
               os    : ubuntu-latest,
+              arch  : x64,
               lib   : static,
               family: gnu,
               cxx   : g++,
@@ -45,6 +46,7 @@ jobs:
 
           - { name  : linux-gnu-shared-all-test,
               os    : ubuntu-latest,
+              arch  : x64,
               lib   : shared,
               family: gnu,
               cxx   : g++,
@@ -56,6 +58,7 @@ jobs:
 
           - { name  : linux-gnu-shared-ext-nolog,
               os    : ubuntu-latest,
+              arch  : x64,
               lib   : shared,
               family: gnu,
               cxx   : g++,
@@ -67,6 +70,7 @@ jobs:
 
           - { name  : linux-gnu-shared-noext-nolog,
               os    : ubuntu-latest,
+              arch  : x64,
               lib   : shared,
               family: gnu,
               cxx   : g++,
@@ -78,6 +82,7 @@ jobs:
 
           - { name  : linux-clang-static-all-test,
               os    : ubuntu-latest,
+              arch  : x64,
               lib   : static,
               family: llvm,
               cxx   : clang++,
@@ -89,6 +94,7 @@ jobs:
 
           - { name  : linux-clang-shared-all-test,
               os    : ubuntu-latest,
+              arch  : x64,
               lib   : shared,
               family: llvm,
               cxx   : clang++,
@@ -100,6 +106,7 @@ jobs:
 
           - { name  : linux-clang-shared-ext-nolog,
               os    : ubuntu-latest,
+              arch  : x64,
               lib   : shared,
               family: llvm,
               cxx   : clang++,
@@ -111,6 +118,7 @@ jobs:
 
           - { name  : linux-clang-shared-noext-nolog,
               os    : ubuntu-latest,
+              arch  : x64,
               lib   : shared,
               family: llvm,
               cxx   : clang++,
@@ -124,6 +132,7 @@ jobs:
           # entries compile it with both disabled, so a newly added one fails the build.
           - { name  : linux-gnu-shared-noexcept,
               os    : ubuntu-latest,
+              arch  : x64,
               lib   : shared,
               family: gnu,
               cxx   : g++,
@@ -136,6 +145,7 @@ jobs:
 
           - { name  : linux-clang-shared-noexcept,
               os    : ubuntu-latest,
+              arch  : x64,
               lib   : shared,
               family: llvm,
               cxx   : clang++,
@@ -144,6 +154,57 @@ jobs:
               logs  : ON,
               test  : OFF,
               noexc : ON
+            }
+
+          # Representative architecture coverage (issue #447). Existing jobs above
+          # stay on host x64; these add x86, ARM, and AArch64 without multiplying
+          # every static/shared/nolog/noexcept variant.
+          - { name  : linux-gnu-shared-x86,
+              os    : ubuntu-latest,
+              arch  : x86,
+              lib   : shared,
+              family: gnu,
+              cxx   : g++,
+              cc    : gcc,
+              extend: ON,
+              logs  : ON,
+              test  : ON
+            }
+
+          - { name  : linux-clang-shared-x86,
+              os    : ubuntu-latest,
+              arch  : x86,
+              lib   : shared,
+              family: llvm,
+              cxx   : clang++,
+              cc    : clang,
+              extend: ON,
+              logs  : ON,
+              test  : ON
+            }
+
+          - { name  : linux-gnu-shared-arm,
+              os    : ubuntu-latest,
+              arch  : arm,
+              lib   : shared,
+              family: gnu,
+              cxx   : g++,
+              cc    : gcc,
+              extend: OFF,
+              logs  : ON,
+              test  : OFF
+            }
+
+          - { name  : linux-gnu-shared-aarch64,
+              os    : ubuntu-latest,
+              arch  : aarch64,
+              lib   : shared,
+              family: gnu,
+              cxx   : g++,
+              cc    : gcc,
+              extend: OFF,
+              logs  : ON,
+              test  : OFF
             }
 
           - { name  : macos-clang-shared-noext,
@@ -192,6 +253,7 @@ jobs:
 
           - { name  : win-cygwin-static-all-test,
               os    : windows-latest,
+              arch  : x64,
               lib   : static,
               family: cygwin,
               cxx   : g++,
@@ -203,6 +265,7 @@ jobs:
 
           - { name  : win-cygwin-shared-all-test,
               os    : windows-latest,
+              arch  : x64,
               lib   : shared,
               family: cygwin,
               cxx   : g++,
@@ -214,6 +277,7 @@ jobs:
 
           - { name  : win-cygwin-shared-ext-nolog,
               os    : windows-latest,
+              arch  : x64,
               lib   : shared,
               family: cygwin,
               cxx   : g++,
@@ -225,6 +289,7 @@ jobs:
 
           - { name  : win-cygwin-shared-noext-nolog,
               os    : windows-latest,
+              arch  : x64,
               lib   : shared,
               family: cygwin,
               cxx   : g++,
@@ -236,6 +301,7 @@ jobs:
 
           - { name  : win-clang-static-all-test,
               os    : windows-latest,
+              arch  : x64,
               lib   : static,
               family: llvm,
               cxx   : clang-cl,
@@ -247,6 +313,7 @@ jobs:
 
           - { name  : win-clang-shared-all-test,
               os    : windows-latest,
+              arch  : x64,
               lib   : shared,
               family: llvm,
               cxx   : clang-cl,
@@ -258,6 +325,7 @@ jobs:
 
           - { name  : win-clang-shared-ext-nolog,
               os    : windows-latest,
+              arch  : x64,
               lib   : shared,
               family: llvm,
               cxx   : clang-cl,
@@ -269,6 +337,7 @@ jobs:
 
           - { name  : win-clang-shared-noext-nolog,
               os    : windows-latest,
+              arch  : x64,
               lib   : shared,
               family: llvm,
               cxx   : clang-cl,
@@ -278,8 +347,21 @@ jobs:
               test  : OFF
             }
 
+          - { name  : win-clang-shared-x86,
+              os    : windows-latest,
+              arch  : x86,
+              lib   : shared,
+              family: llvm,
+              cxx   : clang-cl,
+              cc    : clang-cl,
+              extend: ON,
+              logs  : ON,
+              test  : ON
+            }
+
           - { name  : win-msvc-static-all-test,
               os    : windows-latest,
+              arch  : x64,
               lib   : static,
               family: msvc,
               cxx   : cl,
@@ -291,6 +373,7 @@ jobs:
 
           - { name  : win-msvc-shared-all-test,
               os    : windows-latest,
+              arch  : x64,
               lib   : shared,
               family: msvc,
               cxx   : cl,
@@ -302,6 +385,7 @@ jobs:
 
           - { name  : win-msvc-shared-ext-nolog,
               os    : windows-latest,
+              arch  : x64,
               lib   : shared,
               family: msvc,
               cxx   : cl,
@@ -313,6 +397,7 @@ jobs:
 
           - { name  : win-msvc-shared-noext-nolog,
               os    : windows-latest,
+              arch  : x64,
               lib   : shared,
               family: msvc,
               cxx   : cl,
@@ -320,6 +405,18 @@ jobs:
               extend: OFF,
               logs  : OFF,
               test  : OFF
+            }
+
+          - { name  : win-msvc-shared-x86,
+              os    : windows-latest,
+              arch  : x86,
+              lib   : shared,
+              family: msvc,
+              cxx   : cl,
+              cc    : cl,
+              extend: ON,
+              logs  : ON,
+              test  : ON
             }
 
     steps:
@@ -369,6 +466,41 @@ jobs:
           add-to-path: false
           work-vol: 'C:'
 
+      - name: Install Linux 32-bit multilib toolchains
+        if: runner.os == 'Linux' && matrix.config.arch == 'x86'
+        run: sudo apt-get update && sudo apt-get install -y gcc-multilib g++-multilib
+
+      - name: Install Linux ARM and AArch64 cross-compilers
+        if: runner.os == 'Linux' && (matrix.config.arch == 'arm' || matrix.config.arch == 'aarch64')
+        run: |
+          sudo apt-get update && sudo apt-get install -y \
+            gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf \
+            gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+
+      - name: Set architecture CMake flags
+        shell: bash
+        run: |
+          EXTRA_CMAKE_FLAGS=""
+          if [ -n "${{matrix.config.arch}}" ]; then
+            EXTRA_CMAKE_FLAGS="-DAREG_ARCH=${{matrix.config.arch}}"
+          fi
+          if [ "${{runner.os}}" = "Windows" ] && [ "${{matrix.config.family}}" != "cygwin" ]; then
+            if [ "${{matrix.config.arch}}" = "x86" ]; then
+              EXTRA_CMAKE_FLAGS="${EXTRA_CMAKE_FLAGS} -A Win32"
+            elif [ "${{matrix.config.arch}}" = "x64" ]; then
+              EXTRA_CMAKE_FLAGS="${EXTRA_CMAKE_FLAGS} -A x64"
+            fi
+            if [ "${{matrix.config.family}}" = "llvm" ]; then
+              EXTRA_CMAKE_FLAGS="${EXTRA_CMAKE_FLAGS} -T ClangCL"
+            fi
+          fi
+          if [ "${{matrix.config.arch}}" = "arm" ]; then
+            EXTRA_CMAKE_FLAGS="${EXTRA_CMAKE_FLAGS} -DCMAKE_TOOLCHAIN_FILE=./conf/toolchains/gnu-linux-arm32.cmake"
+          elif [ "${{matrix.config.arch}}" = "aarch64" ]; then
+            EXTRA_CMAKE_FLAGS="${EXTRA_CMAKE_FLAGS} -DCMAKE_TOOLCHAIN_FILE=./conf/toolchains/gnu-linux-arm64.cmake"
+          fi
+          echo "EXTRA_CMAKE_FLAGS=${EXTRA_CMAKE_FLAGS}" >> "${GITHUB_ENV}"
+
       - name: Resolve the python 3 interpreter
         if: matrix.config.test == 'ON'
         shell: bash
@@ -405,13 +537,13 @@ jobs:
         if: matrix.config.extend == 'ON'
         working-directory: ${{github.workspace}}
         run: |
-          cmake -B ${{env.CACHE_DEST}} -DAREG_COMPILER_FAMILY=${{matrix.config.family}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DAREG_LIB_TYPE=${{matrix.config.lib}} -DAREG_EXTENDED:BOOL=${{matrix.config.extend}} -DAREG_LOGGING:BOOL=${{matrix.config.logs}} -DAREG_EXAMPLES:BOOL=${{matrix.config.test}} -DAREG_TESTS:BOOL=${{matrix.config.test}} -DAREG_NO_EXCEPTIONS:BOOL=${{matrix.config.noexc || 'OFF'}} -DAREG_INSTALL:BOOL=ON -DAREG_INSTALL_DIR:PATH="${{env.INSTALL_DEST}}"
+          cmake -B ${{env.CACHE_DEST}} ${{env.EXTRA_CMAKE_FLAGS}} -DAREG_COMPILER_FAMILY=${{matrix.config.family}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DAREG_LIB_TYPE=${{matrix.config.lib}} -DAREG_EXTENDED:BOOL=${{matrix.config.extend}} -DAREG_LOGGING:BOOL=${{matrix.config.logs}} -DAREG_EXAMPLES:BOOL=${{matrix.config.test}} -DAREG_TESTS:BOOL=${{matrix.config.test}} -DAREG_NO_EXCEPTIONS:BOOL=${{matrix.config.noexc || 'OFF'}} -DAREG_INSTALL:BOOL=ON -DAREG_INSTALL_DIR:PATH="${{env.INSTALL_DEST}}"
 
       - name: Configure CMake by selecting compiler name
         if: matrix.config.extend == 'OFF'
         working-directory: ${{github.workspace}}
         run: |
-          cmake -B ${{env.CACHE_DEST}} -DAREG_COMPILER=${{matrix.config.cc}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DAREG_LIB_TYPE=${{matrix.config.lib}} -DAREG_EXTENDED:BOOL=${{matrix.config.extend}} -DAREG_LOGGING:BOOL=${{matrix.config.logs}} -DAREG_EXAMPLES:BOOL=${{matrix.config.test}} -DAREG_TESTS:BOOL=${{matrix.config.test}} -DAREG_NO_EXCEPTIONS:BOOL=${{matrix.config.noexc || 'OFF'}} -DAREG_INSTALL:BOOL=ON -DAREG_INSTALL_DIR:PATH="${{env.INSTALL_DEST}}"
+          cmake -B ${{env.CACHE_DEST}} ${{env.EXTRA_CMAKE_FLAGS}} -DAREG_COMPILER=${{matrix.config.cc}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DAREG_LIB_TYPE=${{matrix.config.lib}} -DAREG_EXTENDED:BOOL=${{matrix.config.extend}} -DAREG_LOGGING:BOOL=${{matrix.config.logs}} -DAREG_EXAMPLES:BOOL=${{matrix.config.test}} -DAREG_TESTS:BOOL=${{matrix.config.test}} -DAREG_NO_EXCEPTIONS:BOOL=${{matrix.config.noexc || 'OFF'}} -DAREG_INSTALL:BOOL=ON -DAREG_INSTALL_DIR:PATH="${{env.INSTALL_DEST}}"
 
       - name: Dump the CMake logs of a failed configuration
         if: failure()
@@ -473,7 +605,7 @@ jobs:
       - name: Write core dumps into the workspace
         # A crash leaves a core next to the binaries. ptrace_scope is lowered so the
         # driver can attach gdb to a hung process that is not its own descendant.
-        if: runner.os == 'Linux' && matrix.config.test == 'ON'
+        if: runner.os == 'Linux' && matrix.config.test == 'ON' && matrix.config.arch != 'arm' && matrix.config.arch != 'aarch64'
         working-directory: ${{github.workspace}}
         shell: bash
         run: |
@@ -484,7 +616,7 @@ jobs:
           which gdb || sudo apt-get install -y -qq gdb || true
 
       - name: Run example applications. Ignore if examples are not compiled
-        if: matrix.config.test == 'ON'
+        if: matrix.config.test == 'ON' && matrix.config.arch != 'arm' && matrix.config.arch != 'aarch64'
         working-directory: ${{github.workspace}}
         shell: bash
         timeout-minutes: 25
@@ -496,7 +628,7 @@ jobs:
                   --out-dir "./example-results/${{matrix.config.name}}"
 
       - name: Run Unit Tests. Ignore if unit tests are not compiled
-        if: matrix.config.test == 'ON'
+        if: matrix.config.test == 'ON' && matrix.config.arch != 'arm' && matrix.config.arch != 'aarch64'
         working-directory: ${{github.workspace}}
         # '-C' is required on Windows: no generator is named. The Windows runners get
         # the multi configuration Visual Studio generator, where a test registered without
@@ -509,7 +641,7 @@ jobs:
         # without an artifact, and a slow number never fails the step.
         # The step does fail when an application of a scenario crashes, hangs or does not
         # print what it must, because that is a defect and not a measurement.
-        if: matrix.config.test == 'ON'
+        if: matrix.config.test == 'ON' && matrix.config.arch != 'arm' && matrix.config.arch != 'aarch64'
         working-directory: ${{github.workspace}}
         shell: bash
         timeout-minutes: 40
@@ -522,7 +654,7 @@ jobs:
       - name: Report the failed unit tests
         # The job log needs a credential to read, an annotation does not. This step runs
         # because something else already failed, so it must never fail itself.
-        if: failure() && matrix.config.test == 'ON'
+        if: failure() && matrix.config.test == 'ON' && matrix.config.arch != 'arm' && matrix.config.arch != 'aarch64'
         working-directory: ${{github.workspace}}
         shell: bash
         continue-on-error: true
@@ -542,7 +674,7 @@ jobs:
           ls -l ./cores/ || true
 
       - name: Copy test artifacts if tests fail. Ignore if tests are not compiled
-        if: failure() && matrix.config.test == 'ON'
+        if: failure() && matrix.config.test == 'ON' && matrix.config.arch != 'arm' && matrix.config.arch != 'aarch64'
         working-directory: ${{github.workspace}}
         shell: bash
         # Saves whatever evidence exists and must never fail. When the build itself
@@ -562,7 +694,7 @@ jobs:
           find "${DEST}" -maxdepth 2 | head -n 40
 
       - name: Upload artifacts if tests fail. Ignore if unit tests are not compiled
-        if: failure() && matrix.config.test == 'ON'
+        if: failure() && matrix.config.test == 'ON' && matrix.config.arch != 'arm' && matrix.config.arch != 'aarch64'
         uses: actions/upload-artifact@v7
         with:
           name: ${{matrix.config.name}}
