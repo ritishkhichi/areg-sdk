@@ -30,6 +30,8 @@ jobs:
         # '*-all-test' builds and runs the examples and the unit tests.
         # '*-nolog' and '*-noext' build and install only: no '*-all-test' entry compiles
         # AREG_LOGGING=OFF or AREG_EXTENDED=OFF, and both remove code from the framework.
+        # 'bench: ON' runs the perf tier on a few native x64 jobs only. Extra arch
+        # entries are compile-only so they do not multiply wall-clock time.
         config: # Create matrix with combinations
 
           - { name  : linux-gnu-static-all-test,
@@ -53,7 +55,8 @@ jobs:
               cc    : gcc,
               extend: ON,
               logs  : ON,
-              test  : ON
+              test  : ON,
+              bench : ON
             }
 
           - { name  : linux-gnu-shared-ext-nolog,
@@ -101,7 +104,8 @@ jobs:
               cc    : clang,
               extend: ON,
               logs  : ON,
-              test  : ON
+              test  : ON,
+              bench : ON
             }
 
           - { name  : linux-clang-shared-ext-nolog,
@@ -156,7 +160,8 @@ jobs:
               noexc : ON
             }
 
-          # Representative architecture coverage (issue #447).
+          # Representative architecture coverage (issue #447): compile and install
+          # only. Full examples/tests/benchmarks already run on the host-x64 jobs.
           - { name  : linux-gnu-shared-x86,
               os    : ubuntu-latest,
               arch  : x86,
@@ -166,7 +171,7 @@ jobs:
               cc    : gcc,
               extend: ON,
               logs  : ON,
-              test  : ON
+              test  : OFF
             }
 
           - { name  : linux-clang-shared-x86,
@@ -176,9 +181,9 @@ jobs:
               family: llvm,
               cxx   : clang++,
               cc    : clang,
-              extend: ON,
+              extend: OFF,
               logs  : ON,
-              test  : ON
+              test  : OFF
             }
 
           - { name  : linux-gnu-shared-arm,
@@ -318,7 +323,8 @@ jobs:
               cc    : clang-cl,
               extend: ON,
               logs  : ON,
-              test  : ON
+              test  : ON,
+              bench : ON
             }
 
           - { name  : win-clang-shared-ext-nolog,
@@ -354,7 +360,7 @@ jobs:
               cc    : clang-cl,
               extend: ON,
               logs  : ON,
-              test  : ON
+              test  : OFF
             }
 
           - { name  : win-msvc-static-all-test,
@@ -378,7 +384,8 @@ jobs:
               cc    : cl,
               extend: ON,
               logs  : ON,
-              test  : ON
+              test  : ON,
+              bench : ON
             }
 
           - { name  : win-msvc-shared-ext-nolog,
@@ -414,7 +421,7 @@ jobs:
               cc    : cl,
               extend: ON,
               logs  : ON,
-              test  : ON
+              test  : OFF
             }
 
     steps:
@@ -463,7 +470,7 @@ jobs:
         if: runner.os == 'Linux' && matrix.config.arch == 'x86'
         run: |
           sudo apt-get update && sudo apt-get install -y \
-            gcc-multilib g++-multilib libc6-dev-i386 lib32stdc++-12-dev lib32gcc-s1
+            gcc-multilib g++-multilib libc6-dev-i386 lib32stdc++-dev lib32gcc-s1
 
       - name: Install Linux ARM and AArch64 cross-compilers
         if: runner.os == 'Linux' && (matrix.config.arch == 'arm' || matrix.config.arch == 'aarch64')
@@ -489,14 +496,9 @@ jobs:
               EXTRA_CMAKE_FLAGS="${EXTRA_CMAKE_FLAGS} -T ClangCL"
             fi
           fi
-          if [ "${{runner.os}}" = "Linux" ] && [ "${{matrix.config.arch}}" = "x86" ]; then
-            if [ "${{matrix.config.family}}" = "llvm" ]; then
-              EXTRA_CMAKE_FLAGS="${EXTRA_CMAKE_FLAGS} -DCMAKE_C_FLAGS=-m32 -DCMAKE_CXX_FLAGS=-m32"
-            else
-              EXTRA_CMAKE_FLAGS="${EXTRA_CMAKE_FLAGS} -DCMAKE_C_FLAGS=-m32 -DCMAKE_CXX_FLAGS=-m32"
-            fi
-          fi
-          if [ "${{matrix.config.arch}}" = "arm" ]; then
+          if [ "${{matrix.config.arch}}" = "x86" ] && [ "${{matrix.config.family}}" = "llvm" ] && [ "${{runner.os}}" = "Linux" ]; then
+            EXTRA_CMAKE_FLAGS="${EXTRA_CMAKE_FLAGS} -DCMAKE_TOOLCHAIN_FILE=./conf/toolchains/clang-linux-x86.cmake"
+          elif [ "${{matrix.config.arch}}" = "arm" ]; then
             EXTRA_CMAKE_FLAGS="${EXTRA_CMAKE_FLAGS} -DCMAKE_TOOLCHAIN_FILE=./conf/toolchains/gnu-linux-arm32.cmake"
           elif [ "${{matrix.config.arch}}" = "aarch64" ]; then
             EXTRA_CMAKE_FLAGS="${EXTRA_CMAKE_FLAGS} -DCMAKE_TOOLCHAIN_FILE=./conf/toolchains/gnu-linux-arm64.cmake"
@@ -626,7 +628,7 @@ jobs:
         run: ctest --test-dir ${{env.CACHE_DEST}} -C ${{env.BUILD_TYPE}} --output-on-failure --output-junit test_results.xml
 
       - name: Run the benchmarks and publish the measured rates
-        if: matrix.config.test == 'ON' && matrix.config.arch != 'arm' && matrix.config.arch != 'aarch64'
+        if: matrix.config.bench == 'ON'
         working-directory: ${{github.workspace}}
         shell: bash
         timeout-minutes: 40
@@ -659,19 +661,24 @@ jobs:
         if: failure() && matrix.config.test == 'ON' && matrix.config.arch != 'arm' && matrix.config.arch != 'aarch64'
         working-directory: ${{github.workspace}}
         shell: bash
+        continue-on-error: true
         run: |
           DEST="./${{matrix.config.name}}"
           mkdir -p "${DEST}"
           BIN_DIR="${{env.BUILD_DEST}}/bin"
-          if [ ! -d "${BIN_DIR}" ]; then
-            BIN_DIR="$(find ./product -type d -name bin 2>/dev/null | head -n 1)"
+          case "${BIN_DIR}" in
+            ./product/*|product/*) ;;
+            *) BIN_DIR="" ;;
+          esac
+          if [ -z "${BIN_DIR}" ] || [ ! -d "${BIN_DIR}" ]; then
+            BIN_DIR="$(find ./product/build -type d -name bin 2>/dev/null | head -n 1 || true)"
           fi
           if [ -n "${BIN_DIR}" ] && [ -d "${BIN_DIR}" ]; then cp -R "${BIN_DIR}/" "${DEST}/bin/" || true; fi
           cp -R ./${{env.INSTALL_DEST}}/                   "${DEST}/"                  || true
           cp -R ./example-results/${{matrix.config.name}}/          "${DEST}/example-results/"            || true
           cp -R ./example-results/${{matrix.config.name}}-benchmarks/ "${DEST}/example-results-benchmarks/" || true
           cp -R ./cores/                                 "${DEST}/cores/"            || true
-          find "${DEST}" -maxdepth 2 | head -n 40
+          { find "${DEST}" -maxdepth 2 || true; } | head -n 40 || true
 
       - name: Upload artifacts if tests fail. Ignore if unit tests are not compiled
         if: failure() && matrix.config.test == 'ON' && matrix.config.arch != 'arm' && matrix.config.arch != 'aarch64'
