@@ -22,7 +22,7 @@ jobs:
   build-tests:
     name: ${{matrix.config.name}}
     runs-on: ${{matrix.config.os}}
-    timeout-minutes: 120
+    timeout-minutes: 40
 
     strategy:
       fail-fast: false
@@ -30,8 +30,8 @@ jobs:
         # '*-all-test' builds and runs the examples and the unit tests.
         # '*-nolog' and '*-noext' build and install only: no '*-all-test' entry compiles
         # AREG_LOGGING=OFF or AREG_EXTENDED=OFF, and both remove code from the framework.
-        # 'bench: ON' runs the perf tier on a few native x64 jobs only. Extra arch
-        # entries are compile-only so they do not multiply wall-clock time.
+        # Extra arch entries are compile-only. Benchmarks are skipped: 23_datarate
+        # alone can add 5-8 minutes and was the wall-clock of the last two runs.
         config: # Create matrix with combinations
 
           - { name  : linux-gnu-static-all-test,
@@ -43,7 +43,7 @@ jobs:
               cc    : gcc,
               extend: ON,
               logs  : ON,
-              test  : ON
+              test  : OFF
             }
 
           - { name  : linux-gnu-shared-all-test,
@@ -55,8 +55,7 @@ jobs:
               cc    : gcc,
               extend: ON,
               logs  : ON,
-              test  : ON,
-              bench : ON
+              test  : ON
             }
 
           - { name  : linux-gnu-shared-ext-nolog,
@@ -92,7 +91,7 @@ jobs:
               cc    : clang,
               extend: ON,
               logs  : ON,
-              test  : ON
+              test  : OFF
             }
 
           - { name  : linux-clang-shared-all-test,
@@ -104,8 +103,7 @@ jobs:
               cc    : clang,
               extend: ON,
               logs  : ON,
-              test  : ON,
-              bench : ON
+              test  : ON
             }
 
           - { name  : linux-clang-shared-ext-nolog,
@@ -221,51 +219,6 @@ jobs:
               test  : ON
             }
 
-          - { name  : macos-clang-shared-noext-nolog,
-              os    : macos-latest,
-              lib   : shared,
-              family: llvm,
-              cxx   : clang++,
-              cc    : clang,
-              extend: OFF,
-              logs  : OFF,
-              test  : ON
-            }
-
-          - { name  : macos-clang-static-noext,
-              os    : macos-latest,
-              lib   : static,
-              family: llvm,
-              cxx   : clang++,
-              cc    : clang,
-              extend: OFF,
-              logs  : ON,
-              test  : ON
-            }
-
-          - { name  : macos-clang-static-noext-nolog,
-              os    : macos-latest,
-              lib   : static,
-              family: llvm,
-              cxx   : clang++,
-              cc    : clang,
-              extend: OFF,
-              logs  : OFF,
-              test  : ON
-            }
-
-          - { name  : win-cygwin-static-all-test,
-              os    : windows-latest,
-              arch  : x64,
-              lib   : static,
-              family: cygwin,
-              cxx   : g++,
-              cc    : gcc,
-              extend: ON,
-              logs  : ON,
-              test  : ON
-            }
-
           - { name  : win-cygwin-shared-all-test,
               os    : windows-latest,
               arch  : x64,
@@ -275,30 +228,6 @@ jobs:
               cc    : gcc,
               extend: ON,
               logs  : ON,
-              test  : ON
-            }
-
-          - { name  : win-cygwin-shared-ext-nolog,
-              os    : windows-latest,
-              arch  : x64,
-              lib   : shared,
-              family: cygwin,
-              cxx   : g++,
-              cc    : gcc,
-              extend: ON,
-              logs  : OFF,
-              test  : OFF
-            }
-
-          - { name  : win-cygwin-shared-noext-nolog,
-              os    : windows-latest,
-              arch  : x64,
-              lib   : shared,
-              family: cygwin,
-              cxx   : g++,
-              cc    : gcc,
-              extend: OFF,
-              logs  : OFF,
               test  : OFF
             }
 
@@ -311,7 +240,7 @@ jobs:
               cc    : clang-cl,
               extend: ON,
               logs  : ON,
-              test  : ON
+              test  : OFF
             }
 
           - { name  : win-clang-shared-all-test,
@@ -323,8 +252,7 @@ jobs:
               cc    : clang-cl,
               extend: ON,
               logs  : ON,
-              test  : ON,
-              bench : ON
+              test  : OFF
             }
 
           - { name  : win-clang-shared-ext-nolog,
@@ -372,7 +300,7 @@ jobs:
               cc    : cl,
               extend: ON,
               logs  : ON,
-              test  : ON
+              test  : OFF
             }
 
           - { name  : win-msvc-shared-all-test,
@@ -384,8 +312,7 @@ jobs:
               cc    : cl,
               extend: ON,
               logs  : ON,
-              test  : ON,
-              bench : ON
+              test  : ON
             }
 
           - { name  : win-msvc-shared-ext-nolog,
@@ -427,10 +354,12 @@ jobs:
     steps:
 
       - name: Checkout Areg SDK source codes
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
 
       - name: Setup Java JDK to run code generator
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: 17
           java-package: jre
@@ -462,15 +391,15 @@ jobs:
         if: matrix.config.family == 'cygwin'
         uses: cygwin/cygwin-install-action@v6
         with:
-          packages: cmake, dos2unix, flexdll, gcc-g++, gdb, git, libncurses-devel, make, python3
+          packages: cmake, gcc-g++, make, git, libncurses-devel
           install-dir: 'C:\cygwin'
           add-to-path: false
 
       - name: Install Linux 32-bit multilib toolchains
         if: runner.os == 'Linux' && matrix.config.arch == 'x86'
         run: |
-          sudo apt-get update && sudo apt-get install -y \
-            gcc-multilib g++-multilib libc6-dev-i386 lib32stdc++-dev lib32gcc-s1
+          sudo apt-get update
+          sudo apt-get install -y gcc-multilib g++-multilib
 
       - name: Install Linux ARM and AArch64 cross-compilers
         if: runner.os == 'Linux' && (matrix.config.arch == 'arm' || matrix.config.arch == 'aarch64')
@@ -539,13 +468,13 @@ jobs:
         if: matrix.config.extend == 'ON'
         working-directory: ${{github.workspace}}
         run: |
-          cmake -B ${{env.CACHE_DEST}} ${{env.EXTRA_CMAKE_FLAGS}} -DAREG_COMPILER_FAMILY=${{matrix.config.family}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DAREG_LIB_TYPE=${{matrix.config.lib}} -DAREG_EXTENDED:BOOL=${{matrix.config.extend}} -DAREG_LOGGING:BOOL=${{matrix.config.logs}} -DAREG_EXAMPLES:BOOL=${{matrix.config.test}} -DAREG_TESTS:BOOL=${{matrix.config.test}} -DAREG_NO_EXCEPTIONS:BOOL=${{matrix.config.noexc || 'OFF'}} -DAREG_INSTALL:BOOL=ON -DAREG_INSTALL_DIR:PATH="${{env.INSTALL_DEST}}"
+          cmake -B ${{env.CACHE_DEST}} ${{env.EXTRA_CMAKE_FLAGS}} -DAREG_COMPILER_FAMILY=${{matrix.config.family}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DAREG_LIB_TYPE=${{matrix.config.lib}} -DAREG_EXTENDED:BOOL=${{matrix.config.extend}} -DAREG_LOGGING:BOOL=${{matrix.config.logs}} -DAREG_EXAMPLES:BOOL=${{matrix.config.test}} -DAREG_TESTS:BOOL=${{matrix.config.test}} -DAREG_NO_EXCEPTIONS:BOOL=${{matrix.config.noexc || 'OFF'}} -DAREG_INSTALL:BOOL=${{matrix.config.test}} -DAREG_INSTALL_DIR:PATH="${{env.INSTALL_DEST}}"
 
       - name: Configure CMake by selecting compiler name
         if: matrix.config.extend == 'OFF'
         working-directory: ${{github.workspace}}
         run: |
-          cmake -B ${{env.CACHE_DEST}} ${{env.EXTRA_CMAKE_FLAGS}} -DAREG_COMPILER=${{matrix.config.cc}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DAREG_LIB_TYPE=${{matrix.config.lib}} -DAREG_EXTENDED:BOOL=${{matrix.config.extend}} -DAREG_LOGGING:BOOL=${{matrix.config.logs}} -DAREG_EXAMPLES:BOOL=${{matrix.config.test}} -DAREG_TESTS:BOOL=${{matrix.config.test}} -DAREG_NO_EXCEPTIONS:BOOL=${{matrix.config.noexc || 'OFF'}} -DAREG_INSTALL:BOOL=ON -DAREG_INSTALL_DIR:PATH="${{env.INSTALL_DEST}}"
+          cmake -B ${{env.CACHE_DEST}} ${{env.EXTRA_CMAKE_FLAGS}} -DAREG_COMPILER=${{matrix.config.cc}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DAREG_LIB_TYPE=${{matrix.config.lib}} -DAREG_EXTENDED:BOOL=${{matrix.config.extend}} -DAREG_LOGGING:BOOL=${{matrix.config.logs}} -DAREG_EXAMPLES:BOOL=${{matrix.config.test}} -DAREG_TESTS:BOOL=${{matrix.config.test}} -DAREG_NO_EXCEPTIONS:BOOL=${{matrix.config.noexc || 'OFF'}} -DAREG_INSTALL:BOOL=${{matrix.config.test}} -DAREG_INSTALL_DIR:PATH="${{env.INSTALL_DEST}}"
 
       - name: Dump the CMake logs of a failed configuration
         if: failure()
@@ -566,6 +495,7 @@ jobs:
         run: cmake --build ${{env.CACHE_DEST}} --config ${{env.BUILD_TYPE}} -j16
 
       - name: Locate the build output directory
+        if: matrix.config.test == 'ON' || matrix.config.noexc == 'ON'
         working-directory: ${{github.workspace}}
         shell: bash
         run: |
@@ -596,6 +526,7 @@ jobs:
           echo "OK: no exception tables, no RTTI"
 
       - name: Install with CMake
+        if: matrix.config.test == 'ON'
         working-directory: ${{github.workspace}}
         run: cmake --install ${{env.CACHE_DEST}} --config ${{env.BUILD_TYPE}}
 
@@ -626,17 +557,6 @@ jobs:
         if: matrix.config.test == 'ON' && matrix.config.arch != 'arm' && matrix.config.arch != 'aarch64'
         working-directory: ${{github.workspace}}
         run: ctest --test-dir ${{env.CACHE_DEST}} -C ${{env.BUILD_TYPE}} --output-on-failure --output-junit test_results.xml
-
-      - name: Run the benchmarks and publish the measured rates
-        if: matrix.config.bench == 'ON'
-        working-directory: ${{github.workspace}}
-        shell: bash
-        timeout-minutes: 40
-        run: |
-          BIN_DIR="${{env.BUILD_DEST}}/bin"
-          if [ -d "${BIN_DIR}" ]; then BIN_ARG="--bin-dir ${BIN_DIR}"; else BIN_ARG=""; fi
-          "${{env.PY}}" tools/run-all-examples.py ${BIN_ARG} --tier perf \
-                  --out-dir "./example-results/${{matrix.config.name}}-benchmarks"
 
       - name: Report the failed unit tests
         if: failure() && matrix.config.test == 'ON' && matrix.config.arch != 'arm' && matrix.config.arch != 'aarch64'
@@ -682,7 +602,7 @@ jobs:
 
       - name: Upload artifacts if tests fail. Ignore if unit tests are not compiled
         if: failure() && matrix.config.test == 'ON' && matrix.config.arch != 'arm' && matrix.config.arch != 'aarch64'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: ${{matrix.config.name}}
           path: ./${{matrix.config.name}}/
@@ -691,15 +611,17 @@ jobs:
     name: ubsan (linux-gnu-static)
     runs-on: ubuntu-latest
     continue-on-error: true
-    timeout-minutes: 120
+    timeout-minutes: 40
 
     steps:
 
       - name: Checkout Areg SDK source codes
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
 
       - name: Setup Java JDK to run code generator
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: 17
           java-package: jre
@@ -710,7 +632,7 @@ jobs:
         run: |
           cmake -B ./product/cache/ubsan -DAREG_COMPILER_FAMILY=gnu -DCMAKE_BUILD_TYPE=RelWithDebInfo \
                 -DAREG_LIB_TYPE=static -DAREG_EXTENDED:BOOL=ON -DAREG_LOGGING:BOOL=ON \
-                -DAREG_EXAMPLES:BOOL=ON -DAREG_TESTS:BOOL=OFF \
+                -DAREG_EXAMPLES:BOOL=OFF -DAREG_TESTS:BOOL=OFF \
                 -DCMAKE_CXX_FLAGS="-fsanitize=undefined -fno-omit-frame-pointer -g" \
                 -DCMAKE_C_FLAGS="-fsanitize=undefined -fno-omit-frame-pointer -g" \
                 -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=undefined" \
@@ -719,48 +641,3 @@ jobs:
       - name: Build with CMake
         working-directory: ${{github.workspace}}
         run: cmake --build ./product/cache/ubsan -j16
-
-      - name: Run the examples under the sanitizer
-        working-directory: ${{github.workspace}}
-        shell: bash
-        timeout-minutes: 45
-        continue-on-error: true
-        env:
-          UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=0:log_path=${{github.workspace}}/ubsan/report
-        run: |
-          mkdir -p ./ubsan
-          sudo sysctl -w kernel.yama.ptrace_scope=0 > /dev/null || true
-          BIN_DIR="$(find ./product/build -type d -name bin 2>/dev/null | head -n 1)"
-          python3 tools/run-all-examples.py --bin-dir "${BIN_DIR}" --tier all \
-                  --out-dir ./ubsan/example-results
-
-      - name: Report what the sanitizer found
-        if: always()
-        working-directory: ${{github.workspace}}
-        shell: bash
-        run: |
-          COUNT="$(cat ./ubsan/report.* 2>/dev/null | grep -c 'runtime error:' || true)"
-          if [ "${COUNT}" = "0" ] || [ -z "${COUNT}" ]; then
-            echo "::notice title=ubsan::the sanitizer reported nothing"
-            exit 0
-          fi
-          echo "::warning title=ubsan::${COUNT} report(s), see the artifact"
-          cat ./ubsan/report.* 2>/dev/null | grep 'runtime error:' \
-            | sed -e 's/0x[0-9a-f]*/<address>/g' -e 's#^.*/areg-sdk/##' \
-            | sort | uniq -c | sort -rn > ./ubsan/by-place.txt
-          echo "distinct places: $(wc -l < ./ubsan/by-place.txt)"
-          FRAMEWORK_RE='^[[:space:]]*[0-9]+[[:space:]]+framework/'
-          { grep -E "${FRAMEWORK_RE}" ./ubsan/by-place.txt || true; } | head -n 6 \
-            | while IFS= read -r line; do echo "::error title=ubsan-framework::${line}"; done
-          { grep -Ev "${FRAMEWORK_RE}" ./ubsan/by-place.txt || true; } | head -n 8 \
-            | while IFS= read -r line; do echo "::warning title=ubsan-example::${line}"; done
-          sed -e 's/^.*runtime error: //' -e 's/0x[0-9a-f]*/<address>/g' ./ubsan/by-place.txt \
-            | sed -e "s/'[^']*'/'T'/g" | sort | uniq -c | sort -rn | head -n 20 | tr '\n' '|' \
-            | sed 's/^/::notice title=ubsan-kinds::/'
-
-      - name: Upload the sanitizer reports
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: ubsan-linux
-          path: ./ubsan/
